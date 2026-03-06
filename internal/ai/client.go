@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -193,66 +194,89 @@ func (c *Client) getValidToken(ctx context.Context) (string, error) {
 }
 
 func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*ChatResponse, error) {
-	token, err := c.getValidToken(ctx)
-	if err != nil {
-		return nil, err
+	const maxRetries = 2
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		token, err := c.getValidToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		payload := map[string]interface{}{
+			"model":    "coder-model",
+			"messages": messages,
+			"tools":    tools,
+			"stream":   false,
+		}
+
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "POST", apiBase+"/chat/completions", bytes.NewReader(jsonData))
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		// check for quota exceeded or invalid token error
+		if resp.StatusCode == 429 || resp.StatusCode == 401 {
+			if attempt < maxRetries-1 {
+				log.Printf("quota exceeded or token invalid, refreshing token and retrying...")
+				// force token refresh
+				_, refreshToken, _, err := c.loadTokensFromEnv()
+				if err != nil {
+					return nil, fmt.Errorf("failed to load refresh token: %w", err)
+				}
+				_, _, _, err = c.refreshToken(ctx, refreshToken)
+				if err != nil {
+					return nil, fmt.Errorf("failed to refresh token: %w", err)
+				}
+				continue
+			}
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("api error %d: %s", resp.StatusCode, body)
+		}
+
+		var response struct {
+			Choices []struct {
+				Message struct {
+					Role      string     `json:"role"`
+					Content   string     `json:"content"`
+					ToolCalls []ToolCall `json:"tool_calls"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+
+		if err := json.Unmarshal(body, &response); err != nil {
+			return nil, err
+		}
+
+		if len(response.Choices) == 0 {
+			return nil, fmt.Errorf("no response")
+		}
+
+		return &ChatResponse{
+			Content:   response.Choices[0].Message.Content,
+			ToolCalls: response.Choices[0].Message.ToolCalls,
+		}, nil
 	}
 
-	payload := map[string]interface{}{
-		"model":    "coder-model",
-		"messages": messages,
-		"tools":    tools,
-		"stream":   false,
-	}
-
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", apiBase+"/chat/completions", bytes.NewReader(jsonData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("api error %d: %s", resp.StatusCode, body)
-	}
-
-	var response struct {
-		Choices []struct {
-			Message struct {
-				Role      string     `json:"role"`
-				Content   string     `json:"content"`
-				ToolCalls []ToolCall `json:"tool_calls"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, err
-	}
-
-	if len(response.Choices) == 0 {
-		return nil, fmt.Errorf("no response")
-	}
-
-	return &ChatResponse{
-		Content:   response.Choices[0].Message.Content,
-		ToolCalls: response.Choices[0].Message.ToolCalls,
-	}, nil
+	return nil, fmt.Errorf("max retries exceeded")
 }
