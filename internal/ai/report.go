@@ -65,84 +65,68 @@ func extractStringArray(data map[string]interface{}, key string) []string {
 func (r *AnalysisReport) FormatMarkdown() string {
 	var sb strings.Builder
 
-	sb.WriteString("## 🤖 Zowue AI Analysis Report\n\n")
-
-	if r.Summary != "" {
-		sb.WriteString("### Summary\n\n")
-		sb.WriteString(r.Summary)
-		sb.WriteString("\n\n")
-	}
+	sb.WriteString("## Code Analysis Report\n\n")
 
 	if len(r.CriticalIssues) > 0 {
-		sb.WriteString("### 🚨 Critical Issues\n\n")
+		sb.WriteString("### Critical Issues\n\n")
 		for _, issue := range r.CriticalIssues {
-			sb.WriteString(fmt.Sprintf("- %s\n", issue))
+			fmt.Fprintf(&sb, "- %s\n", issue)
 		}
 		sb.WriteString("\n")
 	}
 
 	if len(r.SecurityIssues) > 0 {
-		sb.WriteString("### 🔒 Security Issues\n\n")
+		sb.WriteString("### Security Issues\n\n")
 		for _, issue := range r.SecurityIssues {
-			sb.WriteString(fmt.Sprintf("- %s\n", issue))
+			fmt.Fprintf(&sb, "- %s\n", issue)
 		}
 		sb.WriteString("\n")
 	}
 
 	if len(r.Warnings) > 0 {
-		sb.WriteString("### ⚠️ Warnings\n\n")
+		sb.WriteString("### Warnings\n\n")
 		for _, warning := range r.Warnings {
-			sb.WriteString(fmt.Sprintf("- %s\n", warning))
+			fmt.Fprintf(&sb, "- %s\n", warning)
 		}
 		sb.WriteString("\n")
 	}
 
-	if r.TestResults != "" {
-		sb.WriteString("### 🧪 Test Results\n\n")
-		sb.WriteString("```\n")
-		sb.WriteString(r.TestResults)
-		sb.WriteString("\n```\n\n")
-	}
-
-	if r.CoverageResults != "" {
-		sb.WriteString("### 📊 Coverage Results\n\n")
-		sb.WriteString("```\n")
-		sb.WriteString(r.CoverageResults)
-		sb.WriteString("\n```\n\n")
+	if len(r.Recommendations) > 0 {
+		sb.WriteString("### Recommendations\n\n")
+		for _, rec := range r.Recommendations {
+			fmt.Fprintf(&sb, "- %s\n", rec)
+		}
+		sb.WriteString("\n")
 	}
 
 	if r.BuildResults != "" {
-		sb.WriteString("### 🔨 Build Results\n\n")
+		sb.WriteString("### Build\n\n")
 		sb.WriteString("```\n")
 		sb.WriteString(r.BuildResults)
 		sb.WriteString("\n```\n\n")
 	}
 
+	if r.TestResults != "" {
+		sb.WriteString("### Tests\n\n")
+		sb.WriteString("```\n")
+		sb.WriteString(r.TestResults)
+		sb.WriteString("\n```\n\n")
+	}
+
 	if r.LintResults != "" {
-		sb.WriteString("### 🔍 Lint Results\n\n")
+		sb.WriteString("### Linter\n\n")
 		sb.WriteString("```\n")
 		sb.WriteString(r.LintResults)
 		sb.WriteString("\n```\n\n")
 	}
 
-	if len(r.Recommendations) > 0 {
-		sb.WriteString("### 💡 Recommendations\n\n")
-		for _, rec := range r.Recommendations {
-			sb.WriteString(fmt.Sprintf("- %s\n", rec))
-		}
-		sb.WriteString("\n")
-	}
-
 	if len(r.FalsePositives) > 0 {
-		sb.WriteString("### ✅ False Positives Identified\n\n")
+		sb.WriteString("<details>\n<summary>False Positives</summary>\n\n")
 		for _, fp := range r.FalsePositives {
-			sb.WriteString(fmt.Sprintf("- %s\n", fp))
+			fmt.Fprintf(&sb, "- %s\n", fp)
 		}
-		sb.WriteString("\n")
+		sb.WriteString("\n</details>\n\n")
 	}
-
-	sb.WriteString("---\n")
-	sb.WriteString("*Analyzed by Zowue AI*\n")
 
 	return sb.String()
 }
