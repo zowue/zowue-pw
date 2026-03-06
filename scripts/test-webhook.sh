@@ -1,5 +1,5 @@
 #!/bin/bash
-#test webhook with sample push event
+# test webhook with sample push event
 
 curl -X POST http://localhost:8802/webhook \
   -H "Content-Type: application/json" \
