@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zarazaex69/zowue-analyzer/internal/ai"
-	"github.com/zarazaex69/zowue-analyzer/internal/github"
-	"github.com/zarazaex69/zowue-analyzer/internal/types"
+	"github.com/zarazaex69/zowue-pw/internal/ai"
+	"github.com/zarazaex69/zowue-pw/internal/github"
+	"github.com/zarazaex69/zowue-pw/internal/types"
 )
 
 type Processor struct {

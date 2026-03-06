@@ -8,9 +8,9 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/zarazaex69/zowue-analyzer/internal/ai"
-	"github.com/zarazaex69/zowue-analyzer/internal/config"
-	"github.com/zarazaex69/zowue-analyzer/internal/server"
+	"github.com/zarazaex69/zowue-pw/internal/ai"
+	"github.com/zarazaex69/zowue-pw/internal/config"
+	"github.com/zarazaex69/zowue-pw/internal/server"
 )
 
 func main() {

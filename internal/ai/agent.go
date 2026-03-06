@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zarazaex69/zowue-analyzer/internal/types"
+	"github.com/zarazaex69/zowue-pw/internal/types"
 )
 
 type Agent struct {

@@ -37,7 +37,7 @@ func Load() (*Config, error) {
 
 	workDir := os.Getenv("WORK_DIR")
 	if workDir == "" {
-		workDir = "/tmp/zowue-analyzer"
+		workDir = "/tmp/zowue-pw"
 	}
 
 	return &Config{

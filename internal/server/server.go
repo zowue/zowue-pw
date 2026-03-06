@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zarazaex69/zowue-analyzer/internal/config"
-	"github.com/zarazaex69/zowue-analyzer/internal/webhook"
+	"github.com/zarazaex69/zowue-pw/internal/config"
+	"github.com/zarazaex69/zowue-pw/internal/webhook"
 )
 
 type Server struct {

@@ -1,4 +1,4 @@
-module github.com/zarazaex69/zowue-analyzer
+module github.com/zarazaex69/zowue-pw
 
 go 1.23
 

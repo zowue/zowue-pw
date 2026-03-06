@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v58/github"
-	"github.com/zarazaex69/zowue-analyzer/internal/ai"
-	"github.com/zarazaex69/zowue-analyzer/internal/types"
+	"github.com/zarazaex69/zowue-pw/internal/ai"
+	"github.com/zarazaex69/zowue-pw/internal/types"
 	"golang.org/x/oauth2"
 )
 
@@ -93,7 +93,7 @@ func (c *Client) formatIssueBody(info *types.CommitInfo, report *ai.AnalysisRepo
 
 // determineLabels assigns labels based on report content
 func (c *Client) determineLabels(report *ai.AnalysisReport) []string {
-	labels := []string{"zowue", "automated-analysis"}
+	labels := []string{"zowue-pw", "automated-analysis"}
 
 	if len(report.CriticalIssues) > 0 {
 		labels = append(labels, "critical", "bug")
