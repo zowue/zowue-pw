@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/zarazaex69/zowue-analyzer/internal/types"
 )
@@ -105,6 +104,7 @@ Start by exploring the project structure.`,
 }
 
 // runAnalysisLoop executes ai agent loop with tool calls
+// runAnalysisLoop executes ai agent loop with tool calls
 func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir string) (*AnalysisReport, error) {
 	messages := []Message{
 		{Role: "system", Content: a.systemPrompt},
@@ -114,27 +114,24 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 	maxIterations := 50
 	iteration := 0
 
-	log.Printf("=== starting ai analysis loop ===")
-	log.Printf("initial prompt length: %d chars", len(initialPrompt))
+	log.Println("\n=== AI ANALYSIS LOOP STARTED ===")
+	log.Printf("repository directory: %s", repoDir)
+	log.Printf("max iterations: %d\n", maxIterations)
 
 	for iteration < maxIterations {
 		iteration++
-		log.Printf("\n=== ai iteration %d/%d ===", iteration, maxIterations)
-		log.Printf("messages in history: %d", len(messages))
+		log.Printf("\n--- AI ITERATION %d/%d ---", iteration, maxIterations)
 
 		// call ai with tools
-		log.Printf("calling ai api...")
+		log.Println("[AI] calling qwen api...")
 		response, err := a.client.Chat(ctx, messages, a.toolset.GetTools())
 		if err != nil {
-			log.Printf("ERROR: ai chat failed: %v", err)
+			log.Printf("[AI] ERROR: chat failed: %v", err)
 			return nil, fmt.Errorf("ai chat failed: %w", err)
 		}
 
-		log.Printf("ai response received:")
-		log.Printf("  content length: %d chars", len(response.Content))
-		log.Printf("  tool calls: %d", len(response.ToolCalls))
 		if response.Content != "" {
-			log.Printf("  content preview: %s", truncate(response.Content, 200))
+			log.Printf("[AI] response: %s", truncate(response.Content, 500))
 		}
 
 		// add assistant response to history
@@ -146,36 +143,34 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 
 		// check if ai wants to call tools
 		if len(response.ToolCalls) == 0 {
-			log.Println("ai finished without tool calls")
+			log.Println("[AI] no tool calls, finishing")
 			break
 		}
 
+		log.Printf("[AI] requested %d tool calls", len(response.ToolCalls))
+
 		// execute tool calls
-		log.Printf("executing %d tool calls...", len(response.ToolCalls))
 		toolResults := make([]ToolResult, 0, len(response.ToolCalls))
 		for i, toolCall := range response.ToolCalls {
-			log.Printf("\ntool call %d/%d:", i+1, len(response.ToolCalls))
-			log.Printf("  id: %s", toolCall.ID)
-			log.Printf("  function: %s", toolCall.Function.Name)
-			log.Printf("  arguments: %s", toolCall.Function.Arguments)
+			log.Printf("\n[TOOL %d/%d] %s", i+1, len(response.ToolCalls), toolCall.Function.Name)
+			log.Printf("  args: %s", truncate(toolCall.Function.Arguments, 200))
 
-			startTime := time.Now()
 			result, err := a.toolset.Execute(ctx, toolCall, repoDir)
-			duration := time.Since(startTime)
-
 			if err != nil {
-				log.Printf("  ERROR: tool execution failed after %v: %v", duration, err)
+				log.Printf("  ERROR: %v", err)
 				result = fmt.Sprintf("ERROR: %v", err)
 			} else {
-				log.Printf("  SUCCESS: completed in %v", duration)
-				log.Printf("  result length: %d chars", len(result))
-				log.Printf("  result preview: %s", truncate(result, 200))
+				log.Printf("  result: %d bytes", len(result))
+				if len(result) < 500 {
+					log.Printf("  output: %s", result)
+				} else {
+					log.Printf("  output: %s...", result[:500])
+				}
 			}
 
 			// check if summary was called
 			if toolCall.Function.Name == "summary" {
-				log.Println("\n=== ai called summary, analysis complete ===")
-				log.Printf("summary content:\n%s", result)
+				log.Println("\n=== AI CALLED SUMMARY ===")
 				return parseAnalysisReport(result), nil
 			}
 
@@ -186,7 +181,6 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 		}
 
 		// add tool results to history
-		log.Printf("\nadding %d tool results to history", len(toolResults))
 		for _, tr := range toolResults {
 			messages = append(messages, Message{
 				Role:       "tool",
@@ -194,9 +188,11 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 				ToolCallID: tr.ToolCallID,
 			})
 		}
+
+		log.Printf("[AI] conversation: %d messages", len(messages))
 	}
 
-	log.Printf("\nERROR: max iterations (%d) reached without summary", maxIterations)
+	log.Println("\n=== AI ANALYSIS FAILED ===")
 	return nil, fmt.Errorf("max iterations reached without summary")
 }
 
