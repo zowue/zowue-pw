@@ -257,7 +257,7 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*C
 
 	// prepare request payload
 	payload := map[string]interface{}{
-		"model":    "qwen-plus",
+		"model":    "coder-model",
 		"messages": messages,
 		"tools":    tools,
 		"stream":   false,
