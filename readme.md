@@ -4,7 +4,7 @@
 
 
 ## About
-zowue - is a github ai rewiev
+zowue-pw - is a neuro github commit  rewiewer
 
  
 <div align="center">  
