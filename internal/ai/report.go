@@ -18,6 +18,10 @@ func parseAnalysisReport(summaryJSON string) *AnalysisReport {
 
 	report := &AnalysisReport{}
 
+	if v, ok := data["title"].(string); ok {
+		report.Title = v
+	}
+
 	if v, ok := data["summary"].(string); ok {
 		report.Summary = v
 	}

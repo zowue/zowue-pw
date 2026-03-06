@@ -52,6 +52,7 @@ AVAILABLE TOOLS:
 
 OUTPUT FORMAT (summary tool):
 {
+  "title": "Brief summary (max 50 chars, e.g. '3 critical issues, 2 security warnings')",
   "critical_issues": ["issue1", "issue2"],
   "security_issues": ["issue1", "issue2"],
   "warnings": ["warning1", "warning2"],

@@ -37,8 +37,16 @@ func (c *Client) CreateIssue(ctx context.Context, repoFullName string, info *typ
 	owner := parts[0]
 	repo := parts[1]
 
+	commitShort := info.CommitHash
+	if len(commitShort) > 7 {
+		commitShort = commitShort[:7]
+	}
+
 	// format issue title
-	title := fmt.Sprintf("🤖 Zowue Analysis: %s", truncateCommitMsg(info.CommitMsg))
+	title := fmt.Sprintf("%s (%s)", report.Title, commitShort)
+	if report.Title == "" {
+		title = fmt.Sprintf("Analysis: %s (%s)", truncateCommitMsg(info.CommitMsg), commitShort)
+	}
 
 	// format issue body
 	body := c.formatIssueBody(info, report)

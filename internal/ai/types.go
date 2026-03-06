@@ -48,6 +48,7 @@ type ChatResponse struct {
 
 // AnalysisReport contains final analysis results
 type AnalysisReport struct {
+	Title           string
 	Summary         string
 	TestResults     string
 	CoverageResults string
