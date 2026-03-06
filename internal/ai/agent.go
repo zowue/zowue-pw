@@ -71,17 +71,14 @@ func (a *Agent) Initialize(ctx context.Context) error {
 	return a.client.Initialize(ctx)
 }
 
-// Analyze performs complete commit analysis
 func (a *Agent) Analyze(ctx context.Context, info *types.CommitInfo, repoDir string) (*AnalysisReport, error) {
 	commitShort := info.CommitHash
 	if len(commitShort) > 7 {
 		commitShort = commitShort[:7]
 	}
 
-	log.Printf("starting ai analysis for commit %s", commitShort)
-
 	// prepare initial context
-	initialPrompt := fmt.Sprintf(`Analyze this Go project commit:
+	initialPrompt := fmt.Sprintf(`Analyze this Go commit:
 
 REPOSITORY: %s
 COMMIT: %s
@@ -125,7 +122,6 @@ Start by exploring the project structure.`,
 }
 
 // runAnalysisLoop executes ai agent loop with tool calls
-// runAnalysisLoop executes ai agent loop with tool calls
 func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir string) (*AnalysisReport, error) {
 	systemContent := a.systemPrompt
 	userContent := initialPrompt
@@ -136,26 +132,12 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 	}
 
 	maxIterations := 50
-	iteration := 0
 
-	log.Println("\n=== AI ANALYSIS LOOP STARTED ===")
-	log.Printf("repository directory: %s", repoDir)
-	log.Printf("max iterations: %d\n", maxIterations)
-
-	for iteration < maxIterations {
-		iteration++
-		log.Printf("\n--- AI ITERATION %d/%d ---", iteration, maxIterations)
-
+	for iteration := 1; iteration <= maxIterations; iteration++ {
 		// call ai with tools
-		log.Println("[AI] calling qwen api...")
 		response, err := a.client.Chat(ctx, messages, a.toolset.GetTools())
 		if err != nil {
-			log.Printf("[AI] ERROR: chat failed: %v", err)
 			return nil, fmt.Errorf("ai chat failed: %w", err)
-		}
-
-		if response.Content != "" {
-			log.Printf("[AI] response: %s", truncate(response.Content, 500))
 		}
 
 		// add assistant response to history
@@ -172,34 +154,21 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 
 		// check if ai wants to call tools
 		if len(response.ToolCalls) == 0 {
-			log.Println("[AI] no tool calls, finishing")
 			break
 		}
 
-		log.Printf("[AI] requested %d tool calls", len(response.ToolCalls))
+		log.Printf("%d/%d %d tools", iteration, maxIterations, len(response.ToolCalls))
 
 		// execute tool calls
 		toolResults := make([]ToolResult, 0, len(response.ToolCalls))
-		for i, toolCall := range response.ToolCalls {
-			log.Printf("\n[TOOL %d/%d] %s", i+1, len(response.ToolCalls), toolCall.Function.Name)
-			log.Printf("  args: %s", truncate(toolCall.Function.Arguments, 200))
-
+		for _, toolCall := range response.ToolCalls {
 			result, err := a.toolset.Execute(ctx, toolCall, repoDir)
 			if err != nil {
-				log.Printf("  ERROR: %v", err)
 				result = fmt.Sprintf("ERROR: %v", err)
-			} else {
-				log.Printf("  result: %d bytes", len(result))
-				if len(result) < 500 {
-					log.Printf("  output: %s", result)
-				} else {
-					log.Printf("  output: %s...", result[:500])
-				}
 			}
 
 			// check if summary was called
 			if toolCall.Function.Name == "summary" {
-				log.Println("\n=== AI CALLED SUMMARY ===")
 				return parseAnalysisReport(result), nil
 			}
 
@@ -220,12 +189,9 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 				ToolCallID: &toolCallID,
 			})
 		}
-
-		log.Printf("[AI] conversation: %d messages", len(messages))
 	}
 
-	log.Println("\n=== AI ANALYSIS FAILED ===")
-	return nil, fmt.Errorf("max iterations reached without summary")
+	return nil, fmt.Errorf("max iterations reached")
 }
 
 // truncate limits string length

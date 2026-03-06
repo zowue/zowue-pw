@@ -103,25 +103,32 @@ func (r *AnalysisReport) FormatMarkdown() string {
 		sb.WriteString("\n")
 	}
 
-	if r.BuildResults != "" {
-		sb.WriteString("### Build\n\n")
-		sb.WriteString("```\n")
-		sb.WriteString(r.BuildResults)
-		sb.WriteString("\n```\n\n")
-	}
+	// build, tests, linter in details
+	if r.BuildResults != "" || r.TestResults != "" || r.LintResults != "" {
+		sb.WriteString("<details>\n<summary>Build & Test Details</summary>\n\n")
 
-	if r.TestResults != "" {
-		sb.WriteString("### Tests\n\n")
-		sb.WriteString("```\n")
-		sb.WriteString(r.TestResults)
-		sb.WriteString("\n```\n\n")
-	}
+		if r.BuildResults != "" {
+			sb.WriteString("### Build\n\n")
+			sb.WriteString("```\n")
+			sb.WriteString(r.BuildResults)
+			sb.WriteString("\n```\n\n")
+		}
 
-	if r.LintResults != "" {
-		sb.WriteString("### Linter\n\n")
-		sb.WriteString("```\n")
-		sb.WriteString(r.LintResults)
-		sb.WriteString("\n```\n\n")
+		if r.TestResults != "" {
+			sb.WriteString("### Tests\n\n")
+			sb.WriteString("```\n")
+			sb.WriteString(r.TestResults)
+			sb.WriteString("\n```\n\n")
+		}
+
+		if r.LintResults != "" {
+			sb.WriteString("### Linter\n\n")
+			sb.WriteString("```\n")
+			sb.WriteString(r.LintResults)
+			sb.WriteString("\n```\n\n")
+		}
+
+		sb.WriteString("</details>\n\n")
 	}
 
 	if len(r.FalsePositives) > 0 {
