@@ -1,5 +1,8 @@
 <div align="center">
 
+![License](https://img.shields.io/badge/The-unlicense-0D1117?style=flat-square&logo=open-source-initiative&logoColor=green&labelColor=0D1117)
+
+
 </div>
 
 
