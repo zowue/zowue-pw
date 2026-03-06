@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/zarazaex69/zowue-analyzer/internal/ai"
 	"github.com/zarazaex69/zowue-analyzer/internal/config"
 	"github.com/zarazaex69/zowue-analyzer/internal/server"
 )
@@ -20,6 +21,14 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
+	}
+
+	// initialize ai agent with authentication
+	log.Println("initializing ai agent...")
+	agent := ai.NewAgent()
+	ctx := context.Background()
+	if err := agent.Initialize(ctx); err != nil {
+		log.Fatalf("failed to initialize ai agent: %v", err)
 	}
 
 	// create webhook server

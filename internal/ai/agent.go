@@ -55,6 +55,11 @@ IMPORTANT:
 	}
 }
 
+// Initialize performs initial setup and authentication
+func (a *Agent) Initialize(ctx context.Context) error {
+	return a.client.Initialize(ctx)
+}
+
 // Analyze performs complete commit analysis
 func (a *Agent) Analyze(ctx context.Context, info *types.CommitInfo, repoDir string) (*AnalysisReport, error) {
 	log.Printf("starting ai analysis for commit %s", info.CommitHash[:7])

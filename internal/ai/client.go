@@ -43,6 +43,24 @@ func NewClient() *Client {
 	}
 }
 
+// Initialize performs initial authentication check and setup
+func (c *Client) Initialize(ctx context.Context) error {
+	log.Printf("[AI] initializing qwen client...")
+
+	// ensure authentication exists
+	if err := c.ensureAuthenticated(ctx); err != nil {
+		return fmt.Errorf("failed to initialize authentication: %w", err)
+	}
+
+	// verify token is valid
+	if _, err := c.getValidToken(ctx); err != nil {
+		return fmt.Errorf("failed to get valid token: %w", err)
+	}
+
+	log.Printf("[AI] qwen client initialized successfully")
+	return nil
+}
+
 // loadTokensFromEnv loads tokens from environment variables
 func (c *Client) loadTokensFromEnv() (accessToken, refreshToken string, expiryDate int64, err error) {
 	accessToken = os.Getenv("QWEN_ACCESS_TOKEN")
@@ -65,6 +83,25 @@ func (c *Client) loadTokensFromEnv() (accessToken, refreshToken string, expiryDa
 	}
 
 	return accessToken, refreshToken, expiryDate, nil
+}
+
+// ensureAuthenticated ensures valid tokens exist, triggering device flow if needed
+func (c *Client) ensureAuthenticated(ctx context.Context) error {
+	// try loading existing tokens
+	_, _, _, err := c.loadTokensFromEnv()
+	if err == nil {
+		return nil
+	}
+
+	log.Printf("[AUTH] no valid tokens found: %v", err)
+	log.Printf("[AUTH] initiating oauth device flow...")
+
+	// perform device flow authentication
+	if err := c.authenticateDeviceFlow(ctx); err != nil {
+		return fmt.Errorf("device flow authentication failed: %w", err)
+	}
+
+	return nil
 }
 
 // updateEnvFile updates tokens in .env file
@@ -178,6 +215,11 @@ func (c *Client) refreshToken(ctx context.Context, refreshToken string) (string,
 
 // getValidToken returns valid access token, refreshing if necessary
 func (c *Client) getValidToken(ctx context.Context) (string, error) {
+	// ensure authentication exists
+	if err := c.ensureAuthenticated(ctx); err != nil {
+		return "", fmt.Errorf("authentication failed: %w", err)
+	}
+
 	// load tokens from env
 	accessToken, refreshToken, expiryDate, err := c.loadTokensFromEnv()
 	if err != nil {
