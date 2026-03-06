@@ -14,7 +14,8 @@ import (
 )
 
 func main() {
-	// load .env file if exists
+	// load .env file if exists 
+	// TODO: add log if .env nonexits
 	_ = godotenv.Load()
 
 	// load configuration from environment
