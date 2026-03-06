@@ -13,11 +13,8 @@ zowue - is a github ai rewiev
 
 ### Contact
  
-Telegram: [zarazaex](https://t.me/zarazaexe)
+Telegram: [zowue34](https://t.me/zowue34)
 <br> 
-Email: [zarazaex@tuta.io](mailto:zarazaex@tuta.io)
-<br>
-Site: [zarazaex.xyz](https://zarazaex.xyz)
-<br>
+Email: [heminpo49@gmail.com](mailto:heminpo49@gmail.com)
 
 </div>
