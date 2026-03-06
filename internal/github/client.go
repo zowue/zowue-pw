@@ -78,11 +78,12 @@ func (c *Client) formatIssueBody(info *types.CommitInfo, report *ai.AnalysisRepo
 		commitShort = commitShort[:7]
 	}
 
-	sb.WriteString("## Commit Information\n\n")
-	sb.WriteString(fmt.Sprintf("- **Commit**: [`%s`](%s/commit/%s)\n", commitShort, info.RepoHTMLURL, info.CommitHash))
-	sb.WriteString(fmt.Sprintf("- **Message**: %s\n", info.CommitMsg))
-	sb.WriteString(fmt.Sprintf("- **Author**: %s <%s>\n", info.AuthorName, info.AuthorEmail))
-	sb.WriteString(fmt.Sprintf("- **Time**: %s\n\n", info.CommitTime.Format("2006-01-02 15:04:05")))
+	sb.WriteString("## Commit\n\n")
+	sb.WriteString(fmt.Sprintf("[`%s`](%s/commit/%s) • %s\n\n",
+		commitShort,
+		info.RepoHTMLURL,
+		info.CommitHash,
+		info.CommitTime.Format("02.01 15:04")))
 
 	sb.WriteString("---\n\n")
 	sb.WriteString(report.FormatMarkdown())

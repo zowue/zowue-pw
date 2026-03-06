@@ -24,7 +24,6 @@ func main() {
 	}
 
 	// initialize ai agent with authentication
-	log.Println("initializing ai agent...")
 	agent := ai.NewAgent()
 	ctx := context.Background()
 	if err := agent.Initialize(ctx); err != nil {
@@ -43,12 +42,11 @@ func main() {
 
 	go func() {
 		<-sigChan
-		log.Println("shutdown signal received")
 		cancel()
 	}()
 
 	// start server
-	log.Printf("starting webhook server on port %s", cfg.WebhookPort)
+	log.Printf("webhook server listening on :%s", cfg.WebhookPort)
 	if err := srv.Start(ctx); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

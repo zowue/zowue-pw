@@ -39,7 +39,7 @@ func (p *Processor) Process(event *PushEvent) {
 		commitShort = commitShort[:7]
 	}
 
-	log.Printf("[%s] analyzing %s", event.Repository.FullName, commitShort)
+	log.Printf("%s analyzing %s", event.Repository.FullName, commitShort)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
@@ -53,37 +53,37 @@ func (p *Processor) Process(event *PushEvent) {
 
 	// create work directory
 	if err := os.MkdirAll(repoDir, 0755); err != nil {
-		log.Printf("[ERROR] failed to create work directory: %v", err)
+		log.Printf("failed to create work directory: %v", err)
 		return
 	}
 
 	// clone repository at specific commit
 	if err := p.cloneRepo(ctx, event.Repository.CloneURL, event.HeadCommit.ID, repoDir); err != nil {
-		log.Printf("[ERROR] failed to clone repository: %v", err)
+		log.Printf("failed to clone repository: %v", err)
 		return
 	}
 
 	// gather commit information
 	info, err := p.gatherCommitInfo(ctx, event, repoDir)
 	if err != nil {
-		log.Printf("[ERROR] failed to gather commit info: %v", err)
+		log.Printf("failed to gather commit info: %v", err)
 		return
 	}
 
 	// run ai analysis
 	report, err := p.aiAgent.Analyze(ctx, info, repoDir)
 	if err != nil {
-		log.Printf("[ERROR] analysis failed: %v", err)
+		log.Printf("analysis failed: %v", err)
 		return
 	}
 
 	// create github issue with results
 	if err := p.githubClient.CreateIssue(ctx, event.Repository.FullName, info, report); err != nil {
-		log.Printf("[ERROR] failed to create issue: %v", err)
+		log.Printf("failed to create issue: %v", err)
 		return
 	}
 
-	log.Printf("[%s] ✓ done", commitShort)
+	log.Printf("%s done", commitShort)
 }
 
 // cloneRepo clones repository at specific commit

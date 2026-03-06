@@ -34,6 +34,7 @@ IMPORTANT:
 - Do NOT explain what files do
 - Report ONLY problems, warnings, and recommendations
 - Be concise and specific
+- IGNORE: tokens in .env files (normal practice), unchecked Close() on defer (acceptable), unchecked Setenv (low risk)
 
 WORKFLOW:
 1. Run tests and check coverage

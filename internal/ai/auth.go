@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -183,7 +182,6 @@ func (c *Client) attemptTokenPoll(ctx context.Context, deviceCode, verifier stri
 		return nil, true, nil
 	case "slow_down":
 		// server requests slower polling, continue with increased interval
-		log.Printf("[AUTH] server requested slow down, continuing...")
 		return nil, true, nil
 	default:
 		return nil, false, fmt.Errorf("token poll failed: %s - %s", errorResp.Error, errorResp.ErrorDescription)
@@ -192,8 +190,6 @@ func (c *Client) attemptTokenPoll(ctx context.Context, deviceCode, verifier stri
 
 // authenticateDeviceFlow performs full oauth device flow authentication
 func (c *Client) authenticateDeviceFlow(ctx context.Context) error {
-	log.Printf("[AUTH] starting oauth device flow authentication...")
-
 	// generate pkce pair
 	pkce, err := generatePKCE()
 	if err != nil {
@@ -208,11 +204,9 @@ func (c *Client) authenticateDeviceFlow(ctx context.Context) error {
 
 	// display authorization url to user
 	fmt.Println()
-	fmt.Println("==============================================")
 	fmt.Println("QWEN OAUTH AUTHENTICATION REQUIRED")
-	fmt.Println("==============================================")
-	fmt.Printf("\nOpen this URL in your browser:\n%s\n\n", deviceResp.VerificationURIComplete)
-	fmt.Printf("User Code: %s\n\n", deviceResp.UserCode)
+	fmt.Printf("Open this URL: %s\n", deviceResp.VerificationURIComplete)
+	fmt.Printf("User Code: %s\n", deviceResp.UserCode)
 	fmt.Println("Waiting for authorization...")
 	fmt.Println()
 
@@ -230,13 +224,8 @@ func (c *Client) authenticateDeviceFlow(ctx context.Context) error {
 		return fmt.Errorf("failed to save tokens: %w", err)
 	}
 
-	fmt.Println("==============================================")
-	fmt.Println("AUTHENTICATION SUCCESSFUL")
-	fmt.Println("==============================================")
-	fmt.Println("Tokens saved to .env file")
+	fmt.Println("Authentication successful, tokens saved to .env")
 	fmt.Println()
-
-	log.Printf("[AUTH] authentication completed successfully")
 
 	return nil
 }
