@@ -111,9 +111,12 @@ Start by exploring the project structure.`,
 // runAnalysisLoop executes ai agent loop with tool calls
 // runAnalysisLoop executes ai agent loop with tool calls
 func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir string) (*AnalysisReport, error) {
+	systemContent := a.systemPrompt
+	userContent := initialPrompt
+
 	messages := []Message{
-		{Role: "system", Content: a.systemPrompt},
-		{Role: "user", Content: initialPrompt},
+		{Role: "system", Content: &systemContent},
+		{Role: "user", Content: &userContent},
 	}
 
 	maxIterations := 50
@@ -140,9 +143,14 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 		}
 
 		// add assistant response to history
+		var assistantContent *string
+		if response.Content != "" {
+			assistantContent = &response.Content
+		}
+
 		messages = append(messages, Message{
 			Role:      "assistant",
-			Content:   response.Content,
+			Content:   assistantContent,
 			ToolCalls: response.ToolCalls,
 		})
 
@@ -187,10 +195,13 @@ func (a *Agent) runAnalysisLoop(ctx context.Context, initialPrompt, repoDir stri
 
 		// add tool results to history
 		for _, tr := range toolResults {
+			toolContent := tr.Content
+			toolCallID := tr.ToolCallID
+
 			messages = append(messages, Message{
 				Role:       "tool",
-				Content:    tr.Content,
-				ToolCallID: tr.ToolCallID,
+				Content:    &toolContent,
+				ToolCallID: &toolCallID,
 			})
 		}
 
