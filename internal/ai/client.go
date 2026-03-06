@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -180,15 +181,24 @@ func (c *Client) getValidToken(ctx context.Context) (string, error) {
 	// load tokens from env
 	accessToken, refreshToken, expiryDate, err := c.loadTokensFromEnv()
 	if err != nil {
+		log.Printf("[TOKEN] ERROR: failed to load tokens: %v", err)
 		return "", err
 	}
 
+	log.Printf("[TOKEN] loaded tokens from env, expiry: %d", expiryDate)
+
 	// refresh if expired
 	if c.isTokenExpired(expiryDate) {
+		log.Printf("[TOKEN] token expired, refreshing...")
 		accessToken, _, _, err = c.refreshToken(ctx, refreshToken)
 		if err != nil {
+			log.Printf("[TOKEN] ERROR: failed to refresh: %v", err)
 			return "", fmt.Errorf("failed to refresh token: %w", err)
 		}
+		log.Printf("[TOKEN] token refreshed successfully")
+	} else {
+		expiryTime := time.UnixMilli(expiryDate)
+		log.Printf("[TOKEN] token valid, expires in %v", time.Until(expiryTime))
 	}
 
 	return accessToken, nil
@@ -196,10 +206,12 @@ func (c *Client) getValidToken(ctx context.Context) (string, error) {
 
 // Chat sends messages to qwen api and returns response
 func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*ChatResponse, error) {
+	log.Printf("[AI API] getting valid token...")
 	token, err := c.getValidToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get valid token: %w", err)
 	}
+	log.Printf("[AI API] token obtained successfully")
 
 	// prepare request payload
 	payload := map[string]interface{}{
@@ -214,6 +226,11 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*C
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	log.Printf("[AI API] sending request to %s", apiBase+"/chat/completions")
+	log.Printf("[AI API] payload size: %d bytes", len(jsonData))
+	log.Printf("[AI API] messages count: %d", len(messages))
+	log.Printf("[AI API] tools count: %d", len(tools))
+
 	// create http request
 	req, err := http.NewRequestWithContext(ctx, "POST", apiBase+"/chat/completions", bytes.NewReader(jsonData))
 	if err != nil {
@@ -221,21 +238,30 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*C
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+token[:20]+"...")
 
 	// execute request
+	startTime := time.Now()
 	resp, err := c.httpClient.Do(req)
+	duration := time.Since(startTime)
+
 	if err != nil {
+		log.Printf("[AI API] ERROR: request failed after %v: %v", duration, err)
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	log.Printf("[AI API] response received in %v, status: %d", duration, resp.StatusCode)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	log.Printf("[AI API] response body size: %d bytes", len(body))
+
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("[AI API] ERROR: api error %d, body: %s", resp.StatusCode, string(body))
 		return nil, fmt.Errorf("api error: %d, body: %s", resp.StatusCode, body)
 	}
 
@@ -251,12 +277,16 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*C
 	}
 
 	if err := json.Unmarshal(body, &response); err != nil {
+		log.Printf("[AI API] ERROR: failed to parse response: %v", err)
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	if len(response.Choices) == 0 {
+		log.Printf("[AI API] ERROR: no choices in response")
 		return nil, fmt.Errorf("no response from api")
 	}
+
+	log.Printf("[AI API] SUCCESS: parsed response with %d tool calls", len(response.Choices[0].Message.ToolCalls))
 
 	return &ChatResponse{
 		Content:   response.Choices[0].Message.Content,

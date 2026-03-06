@@ -29,7 +29,10 @@ func NewHandler(repos []string, processor *Processor) *Handler {
 
 // ServeHTTP handles incoming webhook requests
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Printf("received webhook request: method=%s, path=%s", r.Method, r.URL.Path)
+
 	if r.Method != http.MethodPost {
+		log.Printf("rejected: method not allowed: %s", r.Method)
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -43,6 +46,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	log.Printf("received payload: %d bytes", len(body))
+
 	// parse push event
 	var event PushEvent
 	if err := json.Unmarshal(body, &event); err != nil {
@@ -51,9 +56,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("parsed event: repo=%s, commit=%s, message=%s",
+		event.Repository.FullName,
+		event.HeadCommit.ID[:7],
+		event.HeadCommit.Message)
+
 	// validate repository
 	if !h.allowedRepos[event.Repository.FullName] {
-		log.Printf("repository not allowed: %s", event.Repository.FullName)
+		log.Printf("repository not allowed: %s (allowed: %v)", event.Repository.FullName, h.getAllowedReposList())
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -74,6 +84,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	go h.processor.Process(&event)
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// getAllowedReposList returns list of allowed repos for logging
+func (h *Handler) getAllowedReposList() []string {
+	repos := make([]string, 0, len(h.allowedRepos))
+	for repo := range h.allowedRepos {
+		repos = append(repos, repo)
+	}
+	return repos
 }
 
 // shouldProcess checks if commit message ends with (w)

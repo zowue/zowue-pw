@@ -34,6 +34,15 @@ func NewProcessor(workDir, githubToken string) *Processor {
 
 // Process handles commit analysis workflow
 func (p *Processor) Process(event *PushEvent) {
+	log.Printf("\n========================================")
+	log.Printf("=== PROCESSING COMMIT ===")
+	log.Printf("========================================")
+	log.Printf("Repository: %s", event.Repository.FullName)
+	log.Printf("Commit: %s", event.HeadCommit.ID)
+	log.Printf("Message: %s", event.HeadCommit.Message)
+	log.Printf("Author: %s <%s>", event.HeadCommit.Author.Name, event.HeadCommit.Author.Email)
+	log.Printf("========================================\n")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
@@ -41,44 +50,56 @@ func (p *Processor) Process(event *PushEvent) {
 	repoName := p.extractRepoName(event.Repository.FullName)
 	repoDir := filepath.Join(p.workDir, repoName)
 
+	log.Printf("[SETUP] work directory: %s", repoDir)
+
 	// cleanup old directory if exists
 	if err := os.RemoveAll(repoDir); err != nil {
-		log.Printf("failed to cleanup old directory: %v", err)
+		log.Printf("[SETUP] WARNING: failed to cleanup old directory: %v", err)
 	}
 
 	// create work directory
 	if err := os.MkdirAll(repoDir, 0755); err != nil {
-		log.Printf("failed to create work directory: %v", err)
+		log.Printf("[SETUP] ERROR: failed to create work directory: %v", err)
 		return
 	}
 
 	// clone repository at specific commit
+	log.Printf("[GIT] cloning repository...")
 	if err := p.cloneRepo(ctx, event.Repository.CloneURL, event.HeadCommit.ID, repoDir); err != nil {
-		log.Printf("failed to clone repository: %v", err)
+		log.Printf("[GIT] ERROR: failed to clone repository: %v", err)
 		return
 	}
+	log.Printf("[GIT] repository cloned successfully")
 
 	// gather commit information
+	log.Printf("[DATA] gathering commit information...")
 	info, err := p.gatherCommitInfo(ctx, event, repoDir)
 	if err != nil {
-		log.Printf("failed to gather commit info: %v", err)
+		log.Printf("[DATA] ERROR: failed to gather commit info: %v", err)
 		return
 	}
+	log.Printf("[DATA] diff size: %d bytes", len(info.Diff))
+	log.Printf("[DATA] file tree size: %d bytes", len(info.FileTree))
 
 	// run ai analysis
+	log.Printf("\n[AI] starting analysis...")
 	report, err := p.aiAgent.Analyze(ctx, info, repoDir)
 	if err != nil {
-		log.Printf("failed to analyze commit: %v", err)
+		log.Printf("[AI] ERROR: failed to analyze commit: %v", err)
 		return
 	}
+	log.Printf("[AI] analysis completed successfully")
 
 	// create github issue with results
+	log.Printf("\n[GITHUB] creating issue...")
 	if err := p.githubClient.CreateIssue(ctx, event.Repository.FullName, info, report); err != nil {
-		log.Printf("failed to create issue: %v", err)
+		log.Printf("[GITHUB] ERROR: failed to create issue: %v", err)
 		return
 	}
 
-	log.Printf("successfully processed commit %s", event.HeadCommit.ID[:7])
+	log.Printf("\n========================================")
+	log.Printf("=== COMMIT PROCESSED SUCCESSFULLY ===")
+	log.Printf("========================================\n")
 }
 
 // cloneRepo clones repository at specific commit
