@@ -280,7 +280,9 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*C
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token[:20]+"...")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	log.Printf("[AI API] authorization header set (token length: %d)", len(token))
 
 	// execute request
 	startTime := time.Now()
