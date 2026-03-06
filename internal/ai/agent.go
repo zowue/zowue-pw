@@ -62,7 +62,12 @@ func (a *Agent) Initialize(ctx context.Context) error {
 
 // Analyze performs complete commit analysis
 func (a *Agent) Analyze(ctx context.Context, info *types.CommitInfo, repoDir string) (*AnalysisReport, error) {
-	log.Printf("starting ai analysis for commit %s", info.CommitHash[:7])
+	commitShort := info.CommitHash
+	if len(commitShort) > 7 {
+		commitShort = commitShort[:7]
+	}
+
+	log.Printf("starting ai analysis for commit %s", commitShort)
 
 	// prepare initial context
 	initialPrompt := fmt.Sprintf(`Analyze this Go project commit:
@@ -90,7 +95,7 @@ Your task:
 
 Start by exploring the project structure.`,
 		info.RepoFullName,
-		info.CommitHash[:7],
+		commitShort,
 		info.CommitMsg,
 		info.AuthorName,
 		info.AuthorEmail,

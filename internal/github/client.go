@@ -65,8 +65,13 @@ func (c *Client) CreateIssue(ctx context.Context, repoFullName string, info *typ
 func (c *Client) formatIssueBody(info *types.CommitInfo, report *ai.AnalysisReport) string {
 	var sb strings.Builder
 
+	commitShort := info.CommitHash
+	if len(commitShort) > 7 {
+		commitShort = commitShort[:7]
+	}
+
 	sb.WriteString("## Commit Information\n\n")
-	sb.WriteString(fmt.Sprintf("- **Commit**: [`%s`](%s/commit/%s)\n", info.CommitHash[:7], info.RepoHTMLURL, info.CommitHash))
+	sb.WriteString(fmt.Sprintf("- **Commit**: [`%s`](%s/commit/%s)\n", commitShort, info.RepoHTMLURL, info.CommitHash))
 	sb.WriteString(fmt.Sprintf("- **Message**: %s\n", info.CommitMsg))
 	sb.WriteString(fmt.Sprintf("- **Author**: %s <%s>\n", info.AuthorName, info.AuthorEmail))
 	sb.WriteString(fmt.Sprintf("- **Time**: %s\n\n", info.CommitTime.Format("2006-01-02 15:04:05")))

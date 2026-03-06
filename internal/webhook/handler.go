@@ -56,9 +56,21 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// validate commit data
+	if event.HeadCommit.ID == "" {
+		log.Printf("rejected: empty commit id")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	commitShort := event.HeadCommit.ID
+	if len(commitShort) > 7 {
+		commitShort = commitShort[:7]
+	}
+
 	log.Printf("parsed event: repo=%s, commit=%s, message=%s",
 		event.Repository.FullName,
-		event.HeadCommit.ID[:7],
+		commitShort,
 		event.HeadCommit.Message)
 
 	// validate repository
@@ -76,7 +88,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("processing commit %s from %s: %s",
-		event.HeadCommit.ID[:7],
+		commitShort,
 		event.Repository.FullName,
 		event.HeadCommit.Message)
 
